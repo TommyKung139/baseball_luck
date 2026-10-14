@@ -1,4 +1,4 @@
-/* Downloads every finished 2026 postseason game that is not in games-raw/ yet.
+/* Downloads every finished postseason game (2025 and 2026) that is not in games-raw/ yet.
    It reads MLB's schedule, then each game's Baseball Savant file, and saves a slim copy.
    It also writes a name for each game (like "NLCS Game 3") into games-raw/labels.json.
    Run by GitHub every few hours (see .github/workflows/sync-games.yml), or by hand: node scripts/sync-postseason.js
@@ -7,7 +7,8 @@ const fs = require('fs');
 const path = require('path');
 const { slim } = require('./slim.js');
 
-const SEASON = 2026;
+/* Seasons to keep. Add a year here to include another season. */
+const SEASONS = (process.env.SEASONS || '2025,2026').split(',').map((y) => y.trim()).filter(Boolean);
 const rawDir = path.join(__dirname, '..', 'games-raw');
 const labelsPath = path.join(rawDir, 'labels.json');
 const HEADERS = { 'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json' };
@@ -39,12 +40,15 @@ function labelFor(g) {
   let labels = {};
   try { labels = JSON.parse(fs.readFileSync(labelsPath, 'utf8')); } catch (e) { /* none yet */ }
 
-  const url = 'https://statsapi.mlb.com/api/v1/schedule?sportId=1&season=' + SEASON +
-    '&gameType=F,D,L,W&startDate=' + SEASON + '-09-15&endDate=' + SEASON + '-11-20&hydrate=team,seriesStatus';
-  const sched = await getJson(url);
   const games = [];
-  (sched.dates || []).forEach((d) => (d.games || []).forEach((g) => games.push(g)));
-  console.log('Schedule lists ' + games.length + ' postseason games.');
+  for (const season of SEASONS) {
+    const url = 'https://statsapi.mlb.com/api/v1/schedule?sportId=1&season=' + season +
+      '&gameType=F,D,L,W&startDate=' + season + '-09-15&endDate=' + season + '-11-20&hydrate=team,seriesStatus';
+    const sched = await getJson(url);
+    let n = 0;
+    (sched.dates || []).forEach((d) => (d.games || []).forEach((g) => { games.push(g); n++; }));
+    console.log(season + ': schedule lists ' + n + ' postseason games.');
+  }
 
   let added = 0, failed = 0, have = 0, waiting = 0;
   for (const g of games) {

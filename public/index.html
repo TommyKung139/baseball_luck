@@ -258,6 +258,23 @@ td.lk .w { font-size: 12px; color: var(--muted); margin-left: 6px; text-transfor
 :lang(zh-Hant) .big .band { line-height: 1.2; }
 :lang(zh-Hant) .verdict, :lang(zh-Hant) .lede { line-height: 1.6; }
 :lang(zh-Hant) details.help .body, :lang(zh-Hant) .foot { line-height: 1.65; }
+
+/* seasons: green = 2026, violet = 2025 */
+:root { --s2026: #0b7a55; --s2025: #5340c8; --s-ink: #ffffff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --s2026: #3fd0a0; --s2025: #a99ff0; --s-ink: #101315; } }
+:root[data-theme="dark"] { --s2026: #3fd0a0; --s2025: #a99ff0; --s-ink: #101315; }
+.seasons { display: flex; flex-wrap: wrap; gap: 8px; }
+.seasons button { --sc: var(--ink2); font: 700 24px/1 var(--display); letter-spacing: 0.02em; padding: 9px 15px 8px; border-radius: 8px; border: 2px solid var(--hair); background: var(--surface); color: var(--ink2); cursor: pointer; display: inline-flex; align-items: center; gap: 9px; }
+.seasons button::before { content: ""; width: 11px; height: 11px; border-radius: 50%; background: var(--sc); }
+.seasons button[data-season="2026"] { --sc: var(--s2026); }
+.seasons button[data-season="2025"] { --sc: var(--s2025); }
+.seasons button .n { font: 500 12px/1 var(--body); color: var(--muted); letter-spacing: 0; }
+.seasons button[aria-pressed=true] { background: var(--sc); border-color: var(--sc); color: var(--s-ink); }
+.seasons button[aria-pressed=true]::before { background: var(--s-ink); }
+.seasons button[aria-pressed=true] .n { color: var(--s-ink); opacity: 0.85; }
+#board { border-top: 4px solid var(--sc, var(--hair)); }
+select { border-left: 4px solid var(--sc, var(--hair)); }
+.seasonchip { font: 700 15px/1 var(--display); letter-spacing: 0.04em; padding: 4px 9px 3px; border-radius: 6px; background: var(--sc, var(--ink2)); color: var(--s-ink); }
 </style>
 </head>
 <body>
@@ -268,6 +285,7 @@ td.lk .w { font-size: 12px; color: var(--muted); margin-left: 6px; text-transfor
       <button type="button" class="btn lang" id="langBtn"></button>
     </div>
     <p class="lede" data-i18n="lede"></p>
+    <div class="seasons" id="seasonSeg" role="group" data-i18n-aria="seasonAria"></div>
     <div class="picker">
       <select id="gameSel"></select>
       <input type="file" id="gameFile" accept=".json,.html,.txt,application/json" multiple>
@@ -433,7 +451,10 @@ td.lk .w { font-size: 12px; color: var(--muted); margin-left: 6px; text-transfor
       removed: 'Removed the preview.',
       statusFinal: 'Final',
       tipChance: 'Hit chance {p}',
-      at: 'at'
+      at: 'at',
+      seasonAria: 'Season',
+      seasonChip: '{y} postseason',
+      seasonEmpty: 'No {y} games yet. They are added automatically after the next sync.'
     },
     zh: {
       title: '季後賽安打運氣',
@@ -532,7 +553,10 @@ td.lk .w { font-size: 12px; color: var(--muted); margin-left: 6px; text-transfor
       removed: '已移除預覽。',
       statusFinal: '終場',
       tipChance: '安打機率 {p}',
-      at: '@'
+      at: '@',
+      seasonAria: '賽季',
+      seasonChip: '{y} 年季後賽',
+      seasonEmpty: '尚無 {y} 年的比賽。下次自動同步後就會加入。'
     }
   };
 
@@ -584,7 +608,8 @@ td.lk .w { font-size: 12px; color: var(--muted); margin-left: 6px; text-transfor
   var zh = function () { return lang === 'zh'; };
 
   var KEY = 'phl.games.v1';
-  var state = { games: [], sel: null, team: 'all', scope: 'hits', sortKey: 'order', sortDir: 1, msg: null };
+  var SEASONS_SHOWN = [2026, 2025];
+  var state = { games: [], sel: null, season: null, emptySeason: false, team: 'all', scope: 'hits', sortKey: 'order', sortDir: 1, msg: null };
   var cache = {};
 
   function $(s) { return document.querySelector(s); }
@@ -641,9 +666,17 @@ td.lk .w { font-size: 12px; color: var(--muted); margin-left: 6px; text-transfor
   }
 
   function cur() {
+    if (state.sel == null) return null;
     for (var i = 0; i < state.games.length; i++) if (state.games[i].pk === state.sel) return state.games[i];
-    return state.games[0];
+    return null;
   }
+  function seasonOf(g) { return g && g.date ? parseInt(g.date.slice(0, 4), 10) : 0; }
+  function seasonList() {
+    var list = SEASONS_SHOWN.slice();
+    state.games.forEach(function (g) { var y = seasonOf(g); if (y && list.indexOf(y) < 0) list.push(y); });
+    return list.sort(function (a, b) { return b - a; });
+  }
+  function gamesIn(y) { return state.games.filter(function (g) { return seasonOf(g) === y; }); }
   function ready() { var g = cur(); return !!(g && g.bip); }
   function analyze(g) {
     if (!cache[g.pk]) {
@@ -687,7 +720,7 @@ td.lk .w { font-size: 12px; color: var(--muted); margin-left: 6px; text-transfor
     try { localStorage.setItem('phl.lang', lang); } catch (e) { /* not saved */ }
     $('#tip').hidden = true;
     applyStatic();
-    if (ready()) renderAll(); else renderPicker();
+    if (ready()) renderAll(); else { renderPicker(); renderIdle(); }
   }
 
   /* ---------- storage (per-browser convenience) ---------- */
@@ -721,12 +754,25 @@ td.lk .w { font-size: 12px; color: var(--muted); margin-left: 6px; text-transfor
     if (g.note) s += ' · ' + noteName(g.note);
     return s;
   }
+  function renderSeasonSeg() {
+    $('#seasonSeg').innerHTML = seasonList().map(function (y) {
+      return '<button type="button" data-season="' + y + '" aria-pressed="' + (state.season === y) + '">' + y + '<span class="n">' + gamesIn(y).length + '</span></button>';
+    }).join('');
+  }
+  function applySeasonColor() {
+    $('.wrap').style.setProperty('--sc', 'var(--s' + state.season + ', var(--ink2))');
+  }
   function renderPicker() {
     var sel = $('#gameSel');
-    sel.innerHTML = state.games.map(function (g) {
+    var list = gamesIn(state.season);
+    sel.innerHTML = list.length ? list.map(function (g) {
       return '<option value="' + esc(g.pk) + '"' + (g.pk === state.sel ? ' selected' : '') + '>' + esc(gameLabel(g)) + '</option>';
-    }).join('');
-    $('#removeBtn').hidden = !(cur() && !cur().builtin);
+    }).join('') : '<option value="">\u2014</option>';
+    sel.disabled = !list.length;
+    var c = cur();
+    $('#removeBtn').hidden = !(c && !c.builtin);
+    renderSeasonSeg();
+    applySeasonColor();
   }
 
   /* ---------- scoreboard ---------- */
@@ -745,7 +791,7 @@ td.lk .w { font-size: 12px; color: var(--muted); margin-left: 6px; text-transfor
       r += '<td class="tot r">' + (tm.runs == null ? '' : tm.runs) + '</td><td class="tot">' + (tm.hits == null ? '' : tm.hits) + '</td><td class="tot">' + (tm.errors == null ? '' : tm.errors) + '</td></tr>';
       return r;
     }
-    var meta = [statusName(g.status), fmtDate(g.date), venueName(g.venue), noteName(g.note)].filter(Boolean).map(function (s) { return '<span>' + esc(s) + '</span>'; }).join('');
+    var meta = '<span class="seasonchip">' + esc(t('seasonChip', { y: seasonOf(g) })) + '</span>' + [statusName(g.status), fmtDate(g.date), venueName(g.venue), noteName(g.note)].filter(Boolean).map(function (s) { return '<span>' + esc(s) + '</span>'; }).join('');
     $('#board').innerHTML = '<div class="meta">' + meta + '</div><div class="scroll"><table class="line"><thead>' + head + '</thead><tbody>' + row('away') + row('home') + '</tbody></table></div>';
     $('#srcLink').innerHTML = t('footGame', { pk: esc(g.pk), url: 'https://baseballsavant.mlb.com/gamefeed?game_pk=' + encodeURIComponent(g.pk) });
   }
@@ -1026,13 +1072,15 @@ td.lk .w { font-size: 12px; color: var(--muted); margin-left: 6px; text-transfor
     var g = cur(); if (!g || g.builtin) return;
     state.games = state.games.filter(function (x) { return x.pk !== g.pk; });
     saveGames(); say([['removed']]);
-    if (state.games.length) selectGame(state.games[0].pk); else showEmpty();
+    selectSeason(state.season);
   });
   $('#langBtn').addEventListener('click', function () { setLang(zh() ? 'en' : 'zh'); });
   document.addEventListener('click', function (e) {
     var btn = e.target.closest ? e.target.closest('button') : null;
     if (!btn) return;
-    if (btn.hasAttribute('data-scope')) {
+    if (btn.hasAttribute('data-season')) {
+      say(null); selectSeason(parseInt(btn.getAttribute('data-season'), 10));
+    } else if (btn.hasAttribute('data-scope')) {
       state.scope = btn.getAttribute('data-scope');
       [].forEach.call(document.querySelectorAll('[data-scope]'), function (x) { x.setAttribute('aria-pressed', x === btn ? 'true' : 'false'); });
       renderTable();
@@ -1071,6 +1119,21 @@ td.lk .w { font-size: 12px; color: var(--muted); margin-left: 6px; text-transfor
     renderPicker();
     $('#board').innerHTML = '<p class="empty">' + t('empty') + '</p>';
   }
+  function showEmptySeason() {
+    state.sel = null; state.emptySeason = true;
+    setSections(false);
+    renderPicker();
+    $('#board').innerHTML = '<p class="empty">' + esc(t('seasonEmpty', { y: state.season })) + '</p>';
+  }
+  function renderIdle() {
+    if (!state.games.length) showEmpty();
+    else if (state.emptySeason) showEmptySeason();
+  }
+  function selectSeason(y) {
+    state.season = y; state.team = 'all';
+    var list = gamesIn(y);
+    if (list.length) selectGame(list[0].pk); else showEmptySeason();
+  }
   function findGame(pk) {
     for (var i = 0; i < state.games.length; i++) if (state.games[i].pk === pk) return i;
     return -1;
@@ -1091,9 +1154,11 @@ td.lk .w { font-size: 12px; color: var(--muted); margin-left: 6px; text-transfor
     });
   }
   function selectGame(pk) {
-    state.sel = pk; state.team = 'all';
+    state.sel = pk; state.team = 'all'; state.emptySeason = false;
+    var gi = findGame(pk);
+    if (gi >= 0) state.season = seasonOf(state.games[gi]);
     renderPicker();
-    if (!(cur() && cur().bip)) { setSections(false); $('#board').innerHTML = '<p class="empty">' + t('loading') + '</p>'; }
+    if (!ready()) { setSections(false); $('#board').innerHTML = '<p class="empty">' + t('loading') + '</p>'; }
     ensure(pk).then(function () { setSections(true); renderAll(); }).catch(function () {
       say([['loadErr']]);
     });
@@ -1110,7 +1175,7 @@ td.lk .w { font-size: 12px; color: var(--muted); margin-left: 6px; text-transfor
       say([['manifestErr']]);
     }).then(function () {
       saved.forEach(function (g) { if (findGame(g.pk) < 0) state.games.push(g); });
-      if (!state.games.length) { showEmpty(); return; }
+      if (!state.games.length) { state.season = SEASONS_SHOWN[0]; showEmpty(); return; }
       selectGame(state.games[0].pk);
     });
   }

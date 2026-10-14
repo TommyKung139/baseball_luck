@@ -43,7 +43,7 @@ const manifest = Object.keys(games).map((pk) => {
   const g = games[pk];
   fs.writeFileSync(path.join(outDir, pk + '.json'), JSON.stringify(g));
   const side = (t) => ({ abbr: t.abbr, name: t.name, runs: t.runs, hits: t.hits, errors: t.errors });
-  return { pk: g.pk, date: g.date, status: g.status, venue: g.venue, note: g.note, away: side(g.away), home: side(g.home) };
+  return { pk: g.pk, season: g.date ? Number(g.date.slice(0, 4)) : null, date: g.date, status: g.status, venue: g.venue, note: g.note, away: side(g.away), home: side(g.home) };
 }).sort((a, b) => (b.date || '').localeCompare(a.date || '') || Number(b.pk) - Number(a.pk));
 
 fs.writeFileSync(path.join(outDir, 'manifest.json'), JSON.stringify(manifest));

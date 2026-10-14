@@ -1,7 +1,8 @@
 # Postseason Hit Luck
 
 A static site. Every game shows every batted ball with exit velocity, launch angle,
-hit probability (Statcast xBA) and a luck percentage for each team. English and Traditional Chinese.
+hit probability (Statcast xBA) and a luck percentage for each team. Postseasons 2026 (green) and 2025 (violet),
+in English and Traditional Chinese.
 
 ## How games get onto the site
 
@@ -9,13 +10,17 @@ Games are added automatically.
 
 - `.github/workflows/sync-games.yml` runs on GitHub every 3 hours.
 - It runs `scripts/sync-postseason.js`, which reads MLB's schedule, downloads every finished
-  2026 postseason game (Wild Card, Division Series, League Championship Series and World Series)
+  postseason game of 2025 and 2026 (Wild Card, Division Series, League Championship Series and World Series)
   from Baseball Savant, and saves a small file for each one in `games-raw/`.
 - Each new file is committed, Vercel sees the commit and redeploys, and the game shows up in the picker.
 - Games that are not played (an if-necessary game after a series ends) are never added.
 
+The season buttons at the top of the page switch between years. Each season has its own color, and the
+scoreboard carries a matching "2025 postseason" or "2026 postseason" tag. To add another year, change the
+list `SEASONS` near the top of `scripts/sync-postseason.js` (and `SEASONS_SHOWN` in `public/index.html`).
+
 To fetch games right now: on GitHub open the Actions tab, choose "Sync postseason games",
-then Run workflow. On the first run it fills in every game played so far.
+then Run workflow. On the first run it fills in every game played so far, for both years.
 
 If Vercel says a deployment was blocked, open the project settings on vercel.com and check the Git settings.
 The sync commits are made under the repository owner's name so that Vercel accepts them.
@@ -35,7 +40,8 @@ The wording for both languages is at the top of the script in `public/index.html
 ## Files
 
 - `games-raw/`: one small file per game. This is the only folder that holds game data.
-- `scripts/build-games.js`: Vercel runs this on every deploy. It turns `games-raw/` into `public/games/`.
+- `scripts/build-games.js`: Vercel runs this on every deploy. It turns `games-raw/` into `public/games/`
+  (the generated folder is not kept in git).
 - `scripts/sync-postseason.js`, `scripts/add-game.js`, `scripts/slim.js`: the download scripts.
 - `public/`: the site.
 
