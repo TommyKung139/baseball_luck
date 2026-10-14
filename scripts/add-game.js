@@ -3,6 +3,7 @@
    Needs Node 18 or newer and an internet connection. */
 const fs = require('fs');
 const path = require('path');
+const { slim } = require('./slim.js');
 
 const pks = process.argv.slice(2).filter((a) => /^\d+$/.test(a));
 if (!pks.length) {
@@ -23,7 +24,7 @@ fs.mkdirSync(rawDir, { recursive: true });
       const gf = await res.json();
       if (!gf || !Array.isArray(gf.exit_velocity)) throw new Error('that does not look like a game feed');
       if (!gf.exit_velocity.length) throw new Error('no batted balls yet (has the game been played?)');
-      fs.writeFileSync(path.join(rawDir, pk + '.json'), JSON.stringify(gf));
+      fs.writeFileSync(path.join(rawDir, pk + '.json'), JSON.stringify(slim(gf)));
       console.log('saved games-raw/' + pk + '.json (' + gf.exit_velocity.length + ' batted balls)');
     } catch (e) {
       failed++;

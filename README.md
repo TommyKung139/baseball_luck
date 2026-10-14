@@ -1,56 +1,54 @@
 # Postseason Hit Luck
 
-A static site. Every game you add shows every batted ball with exit velocity, launch angle,
-hit probability (Statcast xBA) and a luck percentage for each team.
+A static site. Every game shows every batted ball with exit velocity, launch angle,
+hit probability (Statcast xBA) and a luck percentage for each team. English and Traditional Chinese.
+
+## How games get onto the site
+
+Games are added automatically.
+
+- `.github/workflows/sync-games.yml` runs on GitHub every 3 hours.
+- It runs `scripts/sync-postseason.js`, which reads MLB's schedule, downloads every finished
+  2026 postseason game (Wild Card, Division Series, League Championship Series and World Series)
+  from Baseball Savant, and saves a small file for each one in `games-raw/`.
+- Each new file is committed, Vercel sees the commit and redeploys, and the game shows up in the picker.
+- Games that are not played (an if-necessary game after a series ends) are never added.
+
+To fetch games right now: on GitHub open the Actions tab, choose "Sync postseason games",
+then Run workflow. On the first run it fills in every game played so far.
+
+If Vercel says a deployment was blocked, open the project settings on vercel.com and check the Git settings.
+The sync commits are made under the repository owner's name so that Vercel accepts them.
+
+## Add one game by hand
+
+Open `https://baseballsavant.mlb.com/gf?game_pk=NUMBER` in a browser, save the page, and put the file in `games-raw/`
+(any name ending in `.json`, `.html` or `.txt`; large files are fine). Or send the file to Claude to add.
+Names like "NLCS Game 3" come from `games-raw/labels.json`.
 
 ## Languages
 
-The page comes in English and Traditional Chinese. The button at the top right switches between them,
-and the choice is remembered in the visitor's browser. A browser set to Chinese opens in Chinese the first time.
-Player names stay in English. Team names, result types, ballparks and series names are translated.
-The wording for both languages sits at the top of the script in `public/index.html`.
+The button at the top right switches between English and Traditional Chinese, and the choice is remembered.
+A browser set to Chinese opens in Chinese the first time. Player names stay in English.
+The wording for both languages is at the top of the script in `public/index.html`.
 
-## How it works
+## Files
 
-- `games-raw/` holds one Baseball Savant game file per game. This is the only folder you add to.
-- On every deploy, Vercel runs `scripts/build-games.js`, which turns those files into small ones in
-  `public/games/` and writes the game list the page reads. You never run it yourself.
-- `public/` is the site.
+- `games-raw/`: one small file per game. This is the only folder that holds game data.
+- `scripts/build-games.js`: Vercel runs this on every deploy. It turns `games-raw/` into `public/games/`.
+- `scripts/sync-postseason.js`, `scripts/add-game.js`, `scripts/slim.js`: the download scripts.
+- `public/`: the site.
 
-## Add a game (no terminal needed)
+## Look at the site on a computer
 
-1. Find the game number. It is the `game_pk` of the game. The numbers for the rest of the 2026
-   postseason are already in `games-raw/labels.json`, so the game gets its name (like "NLCS Game 3") automatically.
-2. In your browser, open `https://baseballsavant.mlb.com/gf?game_pk=NUMBER` (your number in place of NUMBER).
-3. Save the page (Ctrl+S or Cmd+S). Any file name is fine, as long as it ends in `.json`, `.html` or `.txt`.
-4. On GitHub, open your repository, go into the `games-raw` folder, choose Add file, then Upload files,
-   drop the file in and press Commit changes.
-5. Vercel redeploys in about a minute. Reload the site and the game is in the picker.
-
-Games that are not needed (for example an if-necessary game after a series ends) are simply never added.
-
-## Add games from a terminal (optional)
-
-Needs Node 18 or newer. From this folder:
-
-    node scripts/add-game.js 849809 849820
-    git add games-raw && git commit -m "Add games" && git push
-
-The first line downloads the games from Baseball Savant into `games-raw/`.
-
-## Look at the site on your own computer
+Needs Node 18 or newer.
 
     npm run preview
 
-Then open the address it prints. Opening `public/index.html` by double-clicking will not work,
+Then open the address it prints. Double-clicking `public/index.html` does not work,
 because the page loads its games over the web.
 
 ## First-time Vercel setup
 
-1. Put this folder in a GitHub repository.
-2. On vercel.com choose Add New, then Project, and import the repository.
-3. Leave every setting as it is. `vercel.json` already tells Vercel what to build and what to publish.
-
-## Remove a game
-
-Delete its file from `games-raw/` on GitHub. The next deploy drops it.
+On vercel.com choose Add New, then Project, import this repository and leave every setting as it is.
+`vercel.json` already tells Vercel what to build and what to publish.

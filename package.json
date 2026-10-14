@@ -6,6 +6,7 @@
   "scripts": {
     "build": "node scripts/build-games.js",
     "add": "node scripts/add-game.js",
-    "preview": "node scripts/build-games.js && npx serve public"
+    "preview": "node scripts/build-games.js && npx serve public",
+    "sync": "node scripts/sync-postseason.js"
   }
 }

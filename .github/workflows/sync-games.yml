@@ -1,0 +1,35 @@
+name: Sync postseason games
+
+on:
+  schedule:
+    - cron: '23 */3 * * *'   # every 3 hours
+  workflow_dispatch:          # lets you start it by hand from the Actions tab
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-games
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Download finished postseason games
+        run: node scripts/sync-postseason.js
+      - name: Save new games
+        run: |
+          if [ -n "$(git status --porcelain games-raw)" ]; then
+            git config user.name "${{ github.repository_owner }}"
+            git config user.email "${{ github.repository_owner }}@users.noreply.github.com"
+            git add games-raw
+            git commit -m "Add new postseason games"
+            git push
+          else
+            echo "No new games."
+          fi
