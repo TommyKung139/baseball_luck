@@ -1,0 +1,11 @@
+{
+  "name": "postseason-hit-luck",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Every batted ball in a postseason game with exit velocity, launch angle, hit probability and a luck percentage.",
+  "scripts": {
+    "build": "node scripts/build-games.js",
+    "add": "node scripts/add-game.js",
+    "preview": "node scripts/build-games.js && npx serve public"
+  }
+}

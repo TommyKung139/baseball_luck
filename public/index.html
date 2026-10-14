@@ -1,0 +1,1122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Postseason Hit Luck</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<style>
+/* Base reset (the hosted preview adds this itself). */
+:root { color-scheme: light; }
+body { margin: 0; }
+[hidden] { display: none !important; }
+img { max-width: 100%; }
+/* Layout: one scorebook-style column. Scoreboard first, luck verdict second, evidence (chart, table) below.
+   Color: cool paper ground, ink text, away team = blue, home team = orange (palette slots 1 and 2). */
+:root {
+  --bg: #f3f4f1;
+  --surface: #fcfcfb;
+  --ink: #101315;
+  --ink2: #4d4c49;
+  --muted: #6c6a64;
+  --grid: #e1e0d9;
+  --axis: #c3c2b7;
+  --hair: rgba(16, 19, 21, 0.12);
+  --band: rgba(16, 19, 21, 0.045);
+  --away: #2a78d6;
+  --home: #eb6834;
+  --away-tint: rgba(42, 120, 214, 0.38);
+  --home-tint: rgba(235, 104, 52, 0.38);
+  --btn: #101315;
+  --btn-ink: #fcfcfb;
+  --display: "Barlow Condensed", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", "Arial Narrow", system-ui, sans-serif;
+  --body: "Barlow", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d0d0d;
+    --surface: #1a1a19;
+    --ink: #f0efec;
+    --ink2: #c3c2b7;
+    --muted: #a09e97;
+    --grid: #2c2c2a;
+    --axis: #3d3d3a;
+    --hair: rgba(255, 255, 255, 0.12);
+    --band: rgba(255, 255, 255, 0.05);
+    --away: #3987e5;
+    --home: #d95926;
+    --away-tint: rgba(57, 135, 229, 0.42);
+    --home-tint: rgba(217, 89, 38, 0.46);
+    --btn: #f0efec;
+    --btn-ink: #1a1a19;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d0d0d;
+  --surface: #1a1a19;
+  --ink: #f0efec;
+  --ink2: #c3c2b7;
+  --muted: #a09e97;
+  --grid: #2c2c2a;
+  --axis: #3d3d3a;
+  --hair: rgba(255, 255, 255, 0.12);
+  --band: rgba(255, 255, 255, 0.05);
+  --away: #3987e5;
+  --home: #d95926;
+  --away-tint: rgba(57, 135, 229, 0.42);
+  --home-tint: rgba(217, 89, 38, 0.46);
+  --btn: #f0efec;
+  --btn-ink: #1a1a19;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: 400 15px/1.5 var(--body);
+}
+.wrap {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding-block: 22px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+h1, h2, h3 { font-family: var(--display); font-weight: 700; margin: 0; text-wrap: balance; }
+h1 { font-size: 40px; line-height: 1; letter-spacing: 0.005em; }
+h2 { font-size: 26px; line-height: 1.1; }
+h3 { font-size: 18px; letter-spacing: 0.02em; text-transform: uppercase; }
+p { margin: 0; }
+.muted { color: var(--muted); }
+.tn, table, svg text { font-variant-numeric: tabular-nums; }
+
+/* header + picker */
+.top { display: flex; flex-direction: column; gap: 14px; }
+.lede { color: var(--ink2); max-width: 62ch; font-size: 16px; }
+.picker { display: flex; flex-wrap: wrap; gap: 8px; align-items: stretch; }
+select, .btn {
+  font: 500 14px/1.2 var(--body);
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--hair);
+  border-radius: 8px;
+  padding: 10px 12px;
+  min-height: 42px;
+}
+select { flex: 1 1 280px; min-width: 0; }
+.btn { cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.btn.primary { background: var(--btn); color: var(--btn-ink); border-color: var(--btn); }
+.btn:hover { border-color: var(--ink2); }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+input[type=file] { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+input[type=file]:focus-visible + .btn { outline: 2px solid var(--ink); outline-offset: 2px; }
+details.help { font-size: 14px; color: var(--ink2); }
+details.help summary { cursor: pointer; width: fit-content; font-weight: 500; }
+details.help .body { margin-top: 8px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--hair); border-radius: 8px; max-width: 70ch; }
+details.help ol { margin: 6px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; }
+code { font: 500 13px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--band); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+#msg { font-size: 14px; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--hair); background: var(--surface); }
+#msg[hidden] { display: none; }
+
+.panel { background: var(--surface); border: 1px solid var(--hair); border-radius: 10px; padding: 16px; min-width: 0; }
+.scroll { overflow-x: auto; }
+
+/* scoreboard */
+.meta { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 500; margin-bottom: 10px; }
+.meta a { color: var(--ink2); }
+table.line { border-collapse: collapse; width: 100%; font-size: 15px; }
+table.line th, table.line td { padding: 6px 8px; text-align: center; min-width: 30px; }
+table.line thead th { font: 500 12px/1 var(--body); color: var(--muted); letter-spacing: 0.06em; padding-bottom: 8px; }
+table.line th.tm { text-align: left; font: 700 22px/1 var(--display); letter-spacing: 0.02em; white-space: nowrap; }
+table.line tbody tr + tr td, table.line tbody tr + tr th { border-top: 1px solid var(--grid); }
+table.line td.tot { font: 700 22px/1 var(--display); border-left: 1px solid var(--grid); }
+table.line td.tot + td.tot { border-left: 0; }
+table.line td.tot.r { border-left: 2px solid var(--axis); }
+.sw { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; vertical-align: 1px; }
+.sw.away { background: var(--away); }
+.sw.home { background: var(--home); }
+
+/* luck */
+.verdict { font-size: 18px; line-height: 1.4; max-width: 70ch; }
+.verdict strong { font-weight: 600; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 330px), 1fr)); gap: 14px; }
+.card { display: flex; flex-direction: column; gap: 14px; }
+.card .who { display: flex; align-items: center; gap: 0; }
+.card .who h3 { margin: 0; }
+.big { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.big .num { font: 700 76px/0.9 var(--display); letter-spacing: -0.01em; }
+.big .num small { font-size: 34px; font-weight: 600; margin-left: 2px; }
+.big .band { font: 600 20px/1.1 var(--display); letter-spacing: 0.02em; text-transform: uppercase; }
+.meter { position: relative; height: 18px; }
+.meter .track { position: absolute; left: 0; right: 0; top: 5px; height: 8px; border-radius: 4px; background: var(--grid); }
+.meter .mid { position: absolute; left: 50%; top: 0; width: 2px; height: 18px; margin-left: -1px; background: var(--ink2); }
+.meter .dot { position: absolute; top: 0; width: 18px; height: 18px; margin-left: -9px; border-radius: 50%; border: 3px solid var(--surface); box-shadow: 0 0 0 1px var(--ink2); }
+.meter .dot.away { background: var(--away); }
+.meter .dot.home { background: var(--home); }
+.scale { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); letter-spacing: 0.05em; text-transform: uppercase; margin-top: 6px; }
+dl.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px 12px; margin: 0; }
+dl.stats div { min-width: 0; }
+dl.stats dt { font-size: 12px; color: var(--muted); letter-spacing: 0.05em; text-transform: uppercase; }
+dl.stats dd { margin: 0; font: 600 28px/1.1 var(--display); }
+.chartcap { font-size: 13px; color: var(--muted); }
+.pmf { width: 100%; min-height: 150px; }
+.pmf svg, #scatterSvg svg { display: block; }
+.key { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; color: var(--ink2); }
+.key span { display: inline-flex; align-items: center; gap: 6px; }
+.key i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; }
+.key i.ring { border-radius: 50%; background: var(--surface); border: 2px solid var(--ink2); }
+.key i.disc { border-radius: 50%; background: var(--ink2); }
+.key i.dash { height: 0; width: 14px; border-radius: 0; border-top: 2px dashed var(--ink); }
+
+/* breaks */
+.breaks { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 330px), 1fr)); gap: 14px; }
+.breaks ul { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; }
+.breaks li { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; padding: 9px 0; border-top: 1px solid var(--grid); }
+.breaks li:first-child { border-top: 0; }
+.breaks .nm { font-weight: 600; }
+.breaks .sub { color: var(--muted); font-size: 13px; }
+.breaks .pr { font: 700 24px/1 var(--display); text-align: right; }
+.breaks .pr small { display: block; font: 400 12px/1.2 var(--body); color: var(--muted); }
+
+/* scatter */
+.chartwrap { position: relative; }
+#scatterSvg { width: 100%; touch-action: pan-y; }
+.tip { position: absolute; z-index: 5; pointer-events: none; background: var(--ink); color: var(--bg); border-radius: 8px; padding: 8px 10px; font-size: 13px; line-height: 1.35; min-width: 150px; max-width: 220px; }
+.tip b { font-weight: 600; }
+.tip[hidden] { display: none; }
+svg text { font-family: var(--body); }
+.tick { font-size: 11px; fill: var(--muted); }
+.axt { font-size: 12px; fill: var(--ink2); }
+.lbl { font-size: 11px; fill: var(--muted); }
+.gridline { stroke: var(--grid); stroke-width: 1; }
+.axisline { stroke: var(--axis); stroke-width: 1; }
+.pt.away.hit { fill: var(--away); stroke: var(--surface); stroke-width: 2; }
+.pt.home.hit { fill: var(--home); stroke: var(--surface); stroke-width: 2; }
+.pt.away.out { fill: var(--surface); stroke: var(--away); stroke-width: 2; }
+.pt.home.out { fill: var(--surface); stroke: var(--home); stroke-width: 2; }
+.bar.away.tint { fill: var(--away-tint); }
+.bar.home.tint { fill: var(--home-tint); }
+.bar.away.solid { fill: var(--away); }
+.bar.home.solid { fill: var(--home); }
+.bar.rest { fill: var(--grid); }
+.expline { stroke: var(--ink); stroke-width: 1.5; stroke-dasharray: 4 3; }
+.hl { fill: none; stroke: var(--ink); stroke-width: 1.5; }
+
+/* table */
+.toolbar { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; margin: 12px 0 10px; }
+.seg { display: inline-flex; border: 1px solid var(--hair); border-radius: 8px; overflow: hidden; }
+.seg button { font: 500 14px/1 var(--body); padding: 9px 13px; border: 0; background: var(--surface); color: var(--ink2); cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--hair); }
+.seg button[aria-pressed=true] { background: var(--btn); color: var(--btn-ink); }
+table.bips { border-collapse: collapse; width: 100%; min-width: 760px; font-size: 14px; }
+table.bips th { text-align: left; font: 500 12px/1.2 var(--body); color: var(--muted); letter-spacing: 0.05em; text-transform: uppercase; padding: 8px 10px; border-bottom: 2px solid var(--axis); white-space: nowrap; }
+table.bips th.r, table.bips td.r { text-align: right; }
+table.bips th button { all: unset; cursor: pointer; display: inline-flex; gap: 4px; align-items: center; }
+table.bips th button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+table.bips td { padding: 9px 10px; border-bottom: 1px solid var(--grid); vertical-align: middle; }
+table.bips td.inn { white-space: nowrap; color: var(--ink2); }
+table.bips td.ev { font: 700 19px/1 var(--display); }
+table.bips td.ev .hh { font: 500 11px/1 var(--body); color: var(--muted); margin-left: 4px; letter-spacing: 0.04em; }
+.badge { display: inline-block; font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; border: 1px solid var(--ink2); border-radius: 4px; padding: 1px 5px; margin-left: 6px; color: var(--ink2); }
+.prob { display: inline-flex; align-items: center; gap: 8px; justify-content: flex-end; }
+.prob .pb { width: 56px; height: 8px; border-radius: 4px; background: var(--grid); overflow: hidden; }
+.prob .pb i { display: block; height: 100%; border-radius: 4px; }
+.prob .pb i.away { background: var(--away); }
+.prob .pb i.home { background: var(--home); }
+.prob span.v { min-width: 36px; text-align: right; font-weight: 600; }
+td.lk { white-space: nowrap; text-align: right; }
+td.lk .w { font-size: 12px; color: var(--muted); margin-left: 6px; text-transform: uppercase; letter-spacing: 0.04em; }
+.tm-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 8px; }
+.tm-dot.away { background: var(--away); }
+.tm-dot.home { background: var(--home); }
+.empty { padding: 24px 6px; color: var(--muted); }
+
+.foot { font-size: 13px; color: var(--muted); max-width: 78ch; display: flex; flex-direction: column; gap: 8px; }
+.foot a { color: var(--ink2); }
+@media (max-width: 520px) {
+  h1 { font-size: 34px; }
+  .big .num { font-size: 64px; }
+  dl.stats { grid-template-columns: repeat(2, 1fr); }
+  .panel { padding: 14px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .meter .dot { transition: left 0.4s ease; }
+}
+
+/* language button */
+.titlerow { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.btn.lang { flex: none; min-height: 38px; padding: 8px 12px; white-space: nowrap; }
+/* Chinese text: tighter tracking, no forced case */
+:lang(zh-Hant) h1, :lang(zh-Hant) h2, :lang(zh-Hant) h3 { letter-spacing: 0.02em; text-transform: none; line-height: 1.2; }
+:lang(zh-Hant) .meta, :lang(zh-Hant) .scale, :lang(zh-Hant) dl.stats dt, :lang(zh-Hant) table.bips th,
+:lang(zh-Hant) table.line thead th, :lang(zh-Hant) .badge, :lang(zh-Hant) td.lk .w, :lang(zh-Hant) .big .band { letter-spacing: 0.02em; text-transform: none; }
+:lang(zh-Hant) .big .band { line-height: 1.2; }
+:lang(zh-Hant) .verdict, :lang(zh-Hant) .lede { line-height: 1.6; }
+:lang(zh-Hant) details.help .body, :lang(zh-Hant) .foot { line-height: 1.65; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="titlerow">
+      <h1 data-i18n="title"></h1>
+      <button type="button" class="btn lang" id="langBtn"></button>
+    </div>
+    <p class="lede" data-i18n="lede"></p>
+    <div class="picker">
+      <select id="gameSel"></select>
+      <input type="file" id="gameFile" accept=".json,.html,.txt,application/json" multiple>
+      <label for="gameFile" class="btn" data-i18n="preview" data-i18n-title="previewTip"></label>
+      <button type="button" class="btn" id="removeBtn" hidden data-i18n="removePreview"></button>
+    </div>
+    <div id="msg" role="status" aria-live="polite" hidden></div>
+  </header>
+
+  <section class="panel" id="board" data-i18n-aria="sbAria"></section>
+
+  <section id="luckSec" style="display:flex;flex-direction:column;gap:14px">
+    <h2 data-i18n="luckTitle"></h2>
+    <p class="verdict" id="verdict"></p>
+    <div class="cards" id="cards"></div>
+    <details class="help">
+      <summary data-i18n="methodSummary"></summary>
+      <div class="body">
+        <ol>
+          <li data-i18n="m1"></li>
+          <li data-i18n="m2"></li>
+          <li data-i18n="m3"></li>
+          <li data-i18n="m4"></li>
+        </ol>
+        <p style="margin-top:8px" data-i18n-html="mPct"></p>
+        <p style="margin-top:8px" class="muted" data-i18n="mNote"></p>
+      </div>
+    </details>
+  </section>
+
+  <section class="breaks" id="breaks" data-i18n-aria="breaksAria"></section>
+
+  <section class="panel" id="scatterPanel" data-i18n-aria="scatterPanelAria">
+    <h2 data-i18n="scatterTitle"></h2>
+    <p class="chartcap" style="margin-top:4px" data-i18n="scatterCap"></p>
+    <div class="key" id="scatterKey" style="margin:12px 0 6px"></div>
+    <div class="chartwrap">
+      <div id="scatterSvg"></div>
+      <div class="tip" id="tip" hidden></div>
+    </div>
+  </section>
+
+  <section class="panel" id="tablePanel" data-i18n-aria="tableAria">
+    <h2 data-i18n="tableTitle"></h2>
+    <div class="toolbar">
+      <div class="seg" role="group" data-i18n-aria="scopeAria">
+        <button type="button" data-scope="hits" aria-pressed="true" data-i18n="scopeHits"></button>
+        <button type="button" data-scope="all" aria-pressed="false" data-i18n="scopeAll"></button>
+      </div>
+      <div class="seg" role="group" data-i18n-aria="teamAria" id="teamSeg"></div>
+    </div>
+    <div class="scroll"><table class="bips" id="tbl"></table></div>
+  </section>
+
+  <footer class="foot">
+    <p data-i18n="footData"></p>
+    <p id="srcLink"></p>
+  </footer>
+</div>
+
+<script src="core.js"></script>
+<script>
+(function () {
+  'use strict';
+  var MINUS = '−';
+
+  /* ---------- text in both languages ---------- */
+  var STR = {
+    en: {
+      title: 'Postseason Hit Luck',
+      lede: 'Every batted ball in a playoff game, with its exit velocity, launch angle and the chance it fell for a hit. The chances add up to a luck percentage for each team.',
+      preview: 'Preview a game file',
+      previewTip: 'Opens a Baseball Savant game file for you only. It is not added to the site.',
+      removePreview: 'Remove this preview',
+      gameSelAria: 'Choose a game',
+      langBtn: '繁體中文',
+      langAria: 'Switch the language to Traditional Chinese',
+      sbAria: 'Scoreboard',
+      luckTitle: 'Who got the breaks',
+      verdictNone: 'This file has no batted balls with a hit probability, so luck cannot be worked out.',
+      verdictOne: 'Only one team has batted balls in this file.',
+      verdictEven: 'Luck was close to even. <strong>{a}</strong> had {ah} hits against {ae} expected, and <strong>{h}</strong> had {hh} against {he}.',
+      verdictEdge: '<strong>{lead}</strong> had the luck edge by {d} hits: {lh} hits on contact worth {le}, while {trail} got {th} on contact worth {te}.',
+      cardAria: '{team} luck',
+      noBip: 'No batted balls with a hit probability.',
+      bandNone: 'No data',
+      bandVery: 'Very lucky',
+      bandLucky: 'Lucky',
+      bandEarned: 'About what the contact earned',
+      bandUnlucky: 'Unlucky',
+      bandVeryUn: 'Very unlucky',
+      meterAria: 'Luck {p} percent, 50 is average',
+      endUnlucky: 'Unlucky',
+      endEarned: 'Earned',
+      endLucky: 'Lucky',
+      hits: 'Hits',
+      expected: 'Expected',
+      net: 'Net',
+      hardHit: 'Hard-hit',
+      pmfCap: 'Chance of each hit total (0, 1, 2 and so on) on these {n} batted balls',
+      kFewer: 'Fewer than actual',
+      kActual: 'Actual',
+      kMore: 'More than actual',
+      kExpected: 'Expected',
+      pmfAria: 'Chance of each hit total for {team}. Actual {a} hits, expected {e}.',
+      pmfBar: '{k} hits: {p}% chance',
+      methodSummary: 'How the luck percentage works',
+      m1: 'Every batted ball gets a hit probability. This is Statcast\'s xBA, which is the share of balls hit with that exit velocity and launch angle (and, for some grounders, sprint speed) that have fallen in for hits.',
+      m2: 'Adding a team\'s probabilities gives its expected hits.',
+      m3: 'The probabilities also give the chance of every possible hit total: 0 hits, 1 hit, 2 hits and so on.',
+      m4: 'Luck % is where the team\'s real hit total lands in that spread. It counts the share of outcomes with fewer hits, plus half of the share with exactly as many.',
+      mPct: '<b>50%</b> means the hits matched the contact. Above 50% is lucky, below 50% is unlucky. 90% and above is very lucky, 10% and below is very unlucky.',
+      mNote: 'Only batted balls count: walks and strikeouts are out. Home runs count as hits and sacrifice bunts are left out. Defense and ballpark are part of the luck, not separated from it. One game is a small sample, so a 25% or 75% is a nudge, not proof.',
+      breaksAria: 'Biggest breaks',
+      luckiestTitle: 'Luckiest hits',
+      luckiestSub: 'Hits that had less than a 50% chance of falling.',
+      hardestTitle: 'Hardest-luck outs',
+      hardestSub: 'Outs that had a 50% chance or better of falling.',
+      hitChance: 'hit chance',
+      none: 'None',
+      scatterPanelAria: 'Exit velocity against launch angle',
+      scatterTitle: 'Every batted ball',
+      scatterCap: 'Balls hit hard and between 8° and 32° fall for hits most often. Hover or tap a dot for details.',
+      scatterAria: 'Scatter of launch angle against exit velocity for {n} batted balls. The table below lists every one.',
+      hardLine: 'Hard-hit: 95 mph and up',
+      sweetSpot: 'Sweet spot 8°–32°',
+      axLaunch: 'Launch angle',
+      axEV: 'Exit velocity (mph)',
+      keyHit: '{team} hit',
+      keyOut: '{team} out',
+      noPlot: 'No batted balls to plot.',
+      tableAria: 'Batted ball table',
+      tableTitle: 'Hit by hit',
+      scopeAria: 'Which batted balls',
+      scopeHits: 'Hits',
+      scopeAll: 'All batted balls',
+      teamAria: 'Team',
+      bothTeams: 'Both teams',
+      thInning: 'Inning',
+      thBatter: 'Batter',
+      thResult: 'Result',
+      thEV: 'Exit velocity',
+      thLA: 'Launch angle',
+      thDist: 'Distance',
+      thProb: 'Hit probability',
+      thLuck: 'Luck (hits)',
+      wLucky: 'Lucky',
+      wUnlucky: 'Unlucky',
+      na: 'n/a',
+      noRows: 'No batted balls match this view.',
+      barrel: 'Barrel',
+      footData: 'Data: Baseball Savant game feed. Hit probability is Statcast xBA. Hard-hit means an exit velocity of 95 mph or more.',
+      footGame: 'Game number {pk}. <a href="{url}" target="_blank" rel="noopener">Open this game on Baseball Savant</a>',
+      loading: 'Loading game…',
+      empty: 'No games have been added yet. Check back after the next postseason game.',
+      manifestErr: 'The game list could not be loaded. If you opened this file straight from your computer, serve the public folder with a local web server instead (see the README).',
+      loadErr: 'Could not load that game. Refresh the page and try again.',
+      pvAdded: 'Previewing {n} {games}. It stays in this browser only and is not added to the site.',
+      pvGameOne: 'game',
+      pvGameMany: 'games',
+      pvDup: 'Game {pks} is already on the site.',
+      pvBad: 'Could not read {files}. Use a file saved from the Baseball Savant game feed.',
+      removed: 'Removed the preview.',
+      statusFinal: 'Final',
+      tipChance: 'Hit chance {p}',
+      at: 'at'
+    },
+    zh: {
+      title: '季後賽安打運氣',
+      lede: '季後賽每一場比賽的每一顆擊球，附上擊球初速、擊球仰角，以及它形成安打的機率。把這些機率加總，就得出每支球隊的運氣百分比。',
+      preview: '預覽比賽檔案',
+      previewTip: '開啟 Baseball Savant 的比賽檔案，只有你看得到，不會加到網站上。',
+      removePreview: '移除這個預覽',
+      gameSelAria: '選擇比賽',
+      langBtn: 'English',
+      langAria: '將語言切換為英文',
+      sbAria: '記分板',
+      luckTitle: '誰比較幸運',
+      verdictNone: '這個檔案中沒有附帶安打機率的擊球，無法計算運氣。',
+      verdictOne: '檔案中只有一支球隊有擊球資料。',
+      verdictEven: '運氣大致相當。<strong>{a}</strong>打出 {ah} 支安打，預期為 {ae} 支；<strong>{h}</strong>打出 {hh} 支，預期為 {he} 支。',
+      verdictEdge: '<strong>{lead}</strong>在運氣上領先 {d} 支安打：擊球品質值 {le} 支安打，實際打出 {lh} 支；{trail}的擊球品質值 {te} 支，實際打出 {th} 支。',
+      cardAria: '{team}的運氣',
+      noBip: '沒有附帶安打機率的擊球。',
+      bandNone: '無資料',
+      bandVery: '非常幸運',
+      bandLucky: '幸運',
+      bandEarned: '與擊球品質相符',
+      bandUnlucky: '不幸運',
+      bandVeryUn: '非常不幸運',
+      meterAria: '運氣 {p}%，50% 為平均',
+      endUnlucky: '不幸運',
+      endEarned: '應得',
+      endLucky: '幸運',
+      hits: '安打',
+      expected: '預期',
+      net: '淨差',
+      hardHit: '強勁擊球',
+      pmfCap: '這 {n} 顆擊球打出各種安打總數（0、1、2 支…）的機率',
+      kFewer: '少於實際',
+      kActual: '實際',
+      kMore: '多於實際',
+      kExpected: '預期',
+      pmfAria: '{team}打出各種安打總數的機率。實際 {a} 支安打，預期 {e} 支。',
+      pmfBar: '{k} 支安打：機率 {p}%',
+      methodSummary: '運氣百分比如何計算',
+      m1: '每一顆擊球都有一個安打機率，也就是 Statcast 的 xBA（預期打擊率）：與這顆球相同擊球初速和仰角（部分滾地球還包含跑速）的球，最終形成安打的比例。',
+      m2: '把一支球隊所有擊球的機率加總，就得到預期安打數。',
+      m3: '這些機率也能算出每一種安打總數的機率：0 支、1 支、2 支，依此類推。',
+      m4: '運氣百分比就是球隊實際安打數落在這個分布中的位置：計算安打數較少的結果所佔比例，再加上剛好相同安打數的一半。',
+      mPct: '<b>50%</b> 代表安打數與擊球品質相符。高於 50% 為幸運，低於 50% 為不幸。90% 以上為非常幸運，10% 以下為非常不幸。',
+      mNote: '只計入擊球：保送和三振不算。全壘打算安打，犧牲短打不計入。守備與球場因素都算在運氣裡，沒有另外分開。單場比賽的樣本很小，所以 25% 或 75% 只是輕微的跡象，不是證據。',
+      breaksAria: '最大的運氣差距',
+      luckiestTitle: '最幸運的安打',
+      luckiestSub: '安打機率低於 50% 卻落地的安打。',
+      hardestTitle: '最倒楣的出局',
+      hardestSub: '安打機率達 50% 以上卻成為出局的擊球。',
+      hitChance: '安打機率',
+      none: '無',
+      scatterPanelAria: '擊球初速與擊球仰角',
+      scatterTitle: '每一顆擊球',
+      scatterCap: '擊球強勁且仰角介於 8° 到 32° 之間的球，最容易形成安打。將滑鼠移到圓點上或點一下，即可查看詳情。',
+      scatterAria: '{n} 顆擊球的擊球仰角與擊球初速散佈圖。下方表格列出每一顆。',
+      hardLine: '強勁擊球：95 英里以上',
+      sweetSpot: '甜蜜區 8°–32°',
+      axLaunch: '擊球仰角',
+      axEV: '擊球初速（英里/小時）',
+      keyHit: '{team} 安打',
+      keyOut: '{team} 出局',
+      noPlot: '沒有可繪製的擊球。',
+      tableAria: '擊球表格',
+      tableTitle: '逐支安打',
+      scopeAria: '顯示哪些擊球',
+      scopeHits: '安打',
+      scopeAll: '所有擊球',
+      teamAria: '球隊',
+      bothTeams: '雙方球隊',
+      thInning: '局數',
+      thBatter: '打者',
+      thResult: '結果',
+      thEV: '擊球初速',
+      thLA: '擊球仰角',
+      thDist: '飛行距離',
+      thProb: '安打機率',
+      thLuck: '運氣（安打數）',
+      wLucky: '幸運',
+      wUnlucky: '不幸運',
+      na: '不適用',
+      noRows: '沒有符合條件的擊球。',
+      barrel: '最佳擊球',
+      footData: '資料來源：Baseball Savant 比賽資料。安打機率為 Statcast 的 xBA（預期打擊率）。強勁擊球指擊球初速達 95 英里以上。',
+      footGame: '比賽編號 {pk}。<a href="{url}" target="_blank" rel="noopener">在 Baseball Savant 開啟這場比賽</a>',
+      loading: '載入比賽中…',
+      empty: '尚未加入任何比賽。請在下一場季後賽結束後再來看看。',
+      manifestErr: '無法載入比賽清單。如果你是直接從電腦開啟這個檔案，請改用本機網頁伺服器執行 public 資料夾（請見 README）。',
+      loadErr: '無法載入這場比賽，請重新整理頁面再試一次。',
+      pvAdded: '正在預覽 {n} 場比賽。它只會保留在這個瀏覽器中，不會加到網站上。',
+      pvGameOne: '',
+      pvGameMany: '',
+      pvDup: '比賽 {pks} 已經在網站上了。',
+      pvBad: '無法讀取 {files}。請使用從 Baseball Savant 比賽資料儲存的檔案。',
+      removed: '已移除預覽。',
+      statusFinal: '終場',
+      tipChance: '安打機率 {p}',
+      at: '@'
+    }
+  };
+
+  /* Names and result types that come from the game file. Player names are left as they are. */
+  var TEAM_ZH = {
+    AZ: '響尾蛇', ARI: '響尾蛇', ATL: '勇士', BAL: '金鶯', BOS: '紅襪', CHC: '小熊', CWS: '白襪', CIN: '紅人',
+    CLE: '守護者', COL: '落磯', DET: '老虎', HOU: '太空人', KC: '皇家', LAA: '天使', LAD: '道奇', MIA: '馬林魚',
+    MIL: '釀酒人', MIN: '雙城', NYM: '大都會', NYY: '洋基', OAK: '運動家', ATH: '運動家', PHI: '費城人', PIT: '海盜',
+    SD: '教士', SF: '巨人', SEA: '水手', STL: '紅雀', TB: '光芒', TEX: '遊騎兵', TOR: '藍鳥', WSH: '國民'
+  };
+  var EVENT_ZH = {
+    'Single': '一壘安打', 'Double': '二壘安打', 'Triple': '三壘安打', 'Home Run': '全壘打',
+    'Groundout': '滾地出局', 'Flyout': '飛球出局', 'Lineout': '平飛球出局', 'Pop Out': '內野高飛球出局',
+    'Forceout': '封殺出局', 'Force Out': '封殺出局', 'Sac Fly': '高飛犧牲打', 'Sac Bunt': '犧牲短打',
+    'Field Error': '守備失誤上壘', 'Grounded Into DP': '滾地球雙殺', 'Double Play': '雙殺', 'Triple Play': '三殺',
+    'Fielders Choice': '野手選擇', 'Fielders Choice Out': '野手選擇出局', 'Bunt Groundout': '短打滾地出局',
+    'Bunt Pop Out': '短打高飛出局', 'Bunt Lineout': '短打平飛出局', 'Sac Fly Double Play': '高飛犧牲打雙殺',
+    'Catcher Interference': '捕手妨礙', 'Fan Interference': '觀眾干擾'
+  };
+  var VENUE_ZH = {
+    'American Family Field': '美國家庭球場', 'Dodger Stadium': '道奇球場', 'UNIQLO Field at Dodger Stadium': '道奇球場（UNIQLO Field）',
+    'Progressive Field': '前進球場', 'Tropicana Field': '熱帶風情球場', 'Rogers Centre': '羅傑斯中心', 'Fenway Park': '芬威球場',
+    'Yankee Stadium': '洋基球場', 'Citi Field': '花旗球場', 'Wrigley Field': '瑞格利球場', 'Oracle Park': '甲骨文公園球場',
+    'T-Mobile Park': 'T-Mobile 球場', 'Petco Park': '沛可球場', 'Busch Stadium': '布希球場', 'Truist Park': '信託公園球場',
+    'Comerica Park': '康美利卡球場', 'Kauffman Stadium': '考夫曼球場', 'Target Field': '標靶球場', 'Globe Life Field': '環球人壽球場',
+    'Chase Field': '大通球場', 'Daikin Park': '大金公園球場', 'Citizens Bank Park': '公民銀行公園球場', 'PNC Park': 'PNC 公園球場'
+  };
+  var SERIES_ZH = {
+    'NLCS': '國聯冠軍賽', 'ALCS': '美聯冠軍賽', 'NLDS': '國聯分區系列賽', 'ALDS': '美聯分區系列賽',
+    'World Series': '世界大賽', 'Wild Card': '外卡賽', 'NLWC': '國聯外卡賽', 'ALWC': '美聯外卡賽'
+  };
+
+  function initLang() {
+    try {
+      var v = localStorage.getItem('phl.lang');
+      if (v === 'en' || v === 'zh') return v;
+    } catch (e) { /* no storage: fall through */ }
+    var n = (navigator.language || '').toLowerCase();
+    return n.indexOf('zh') === 0 ? 'zh' : 'en';
+  }
+  var lang = initLang();
+  function t(key, vars) {
+    var s = STR[lang][key];
+    if (s == null) s = STR.en[key];
+    if (s == null) return key;
+    if (vars) s = s.replace(/\{(\w+)\}/g, function (m, k) { return vars[k] != null ? vars[k] : ''; });
+    return s;
+  }
+  var zh = function () { return lang === 'zh'; };
+
+  var KEY = 'phl.games.v1';
+  var state = { games: [], sel: null, team: 'all', scope: 'hits', sortKey: 'order', sortDir: 1, msg: null };
+  var cache = {};
+
+  function $(s) { return document.querySelector(s); }
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function f1(x) { return x.toFixed(1); }
+  function signed(x, d) {
+    var s = Math.abs(x).toFixed(d);
+    if (parseFloat(s) === 0) return s;
+    return (x < 0 ? MINUS : '+') + s;
+  }
+  function deg(x) { return x == null ? '—' : (x < 0 ? MINUS : '') + Math.abs(Math.round(x)) + '°'; }
+  function pctShow(p) { return p < 1 ? '<1' : p > 99 ? '>99' : String(Math.round(p)); }
+
+  /* ---------- names that depend on the language ---------- */
+  var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  function fmtDate(s) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || '');
+    if (!m) return s || '';
+    return zh() ? m[1] + '年' + (+m[2]) + '月' + (+m[3]) + '日' : MONTHS[+m[2] - 1] + ' ' + (+m[3]) + ', ' + m[1];
+  }
+  function teamName(g, side) {
+    var tm = g[side];
+    if (zh() && TEAM_ZH[tm.abbr]) return TEAM_ZH[tm.abbr];
+    return tm.name || tm.abbr;
+  }
+  function eventName(e) { return zh() && EVENT_ZH[e] ? EVENT_ZH[e] : e; }
+  function venueName(v) { return zh() && VENUE_ZH[v] ? VENUE_ZH[v] : v; }
+  function statusName(s) { return s === 'Final' ? t('statusFinal') : s; }
+  function noteName(n) {
+    if (!zh() || !n) return n;
+    var m = /^(.+?) Game (\d+)$/.exec(n);
+    if (m && SERIES_ZH[m[1]]) return SERIES_ZH[m[1]] + ' 第' + m[2] + '戰';
+    return SERIES_ZH[n] || n;
+  }
+  function innLabel(half, n) {
+    return zh() ? n + '局' + (half === 'top' ? '上' : '下') : (half === 'top' ? 'Top ' : 'Bottom ') + n;
+  }
+  function innShort(half, n) {
+    return zh() ? n + (half === 'top' ? '上' : '下') : (half === 'top' ? 'T' : 'B') + n;
+  }
+  function speedText(ev) { return zh() ? '時速 ' + f1(ev) + ' 英里' : f1(ev) + ' mph'; }
+  function distText(d) { return Math.round(d) + (zh() ? ' 呎' : ' ft'); }
+  function bandKey(p) {
+    if (p === null) return 'bandNone';
+    if (p >= 90) return 'bandVery';
+    if (p >= 70) return 'bandLucky';
+    if (p > 30) return 'bandEarned';
+    if (p > 10) return 'bandUnlucky';
+    return 'bandVeryUn';
+  }
+
+  function cur() {
+    for (var i = 0; i < state.games.length; i++) if (state.games[i].pk === state.sel) return state.games[i];
+    return state.games[0];
+  }
+  function ready() { var g = cur(); return !!(g && g.bip); }
+  function analyze(g) {
+    if (!cache[g.pk]) {
+      cache[g.pk] = {
+        away: teamLuck(g.bip.filter(function (b) { return b.side === 'away'; })),
+        home: teamLuck(g.bip.filter(function (b) { return b.side === 'home'; }))
+      };
+    }
+    return cache[g.pk];
+  }
+
+  /* ---------- message line ---------- */
+  function say(parts) {
+    state.msg = parts && parts.length ? parts : null;
+    renderMsg();
+  }
+  function renderMsg() {
+    var m = $('#msg');
+    if (!state.msg) { m.hidden = true; m.textContent = ''; return; }
+    m.hidden = false;
+    m.textContent = state.msg.map(function (p) { return t(p[0], p[1]); }).join(zh() ? '' : ' ');
+  }
+
+  /* ---------- static text ---------- */
+  function applyStatic() {
+    document.documentElement.lang = zh() ? 'zh-Hant' : 'en';
+    document.title = t('title');
+    [].forEach.call(document.querySelectorAll('[data-i18n]'), function (el) { el.textContent = t(el.getAttribute('data-i18n')); });
+    [].forEach.call(document.querySelectorAll('[data-i18n-html]'), function (el) { el.innerHTML = t(el.getAttribute('data-i18n-html')); });
+    [].forEach.call(document.querySelectorAll('[data-i18n-title]'), function (el) { el.setAttribute('title', t(el.getAttribute('data-i18n-title'))); });
+    [].forEach.call(document.querySelectorAll('[data-i18n-aria]'), function (el) { el.setAttribute('aria-label', t(el.getAttribute('data-i18n-aria'))); });
+    var lb = $('#langBtn');
+    lb.textContent = t('langBtn');
+    lb.setAttribute('aria-label', t('langAria'));
+    lb.setAttribute('lang', zh() ? 'en' : 'zh-Hant');
+    $('#gameSel').setAttribute('aria-label', t('gameSelAria'));
+    renderMsg();
+  }
+  function setLang(next) {
+    lang = next;
+    try { localStorage.setItem('phl.lang', lang); } catch (e) { /* not saved */ }
+    $('#tip').hidden = true;
+    applyStatic();
+    if (ready()) renderAll(); else renderPicker();
+  }
+
+  /* ---------- storage (per-browser convenience) ---------- */
+  function loadSaved() {
+    try {
+      var raw = localStorage.getItem(KEY);
+      if (!raw) return [];
+      var arr = JSON.parse(raw);
+      return Array.isArray(arr) ? arr.filter(function (g) { return g && g.pk && g.bip && g.away && g.home; }) : [];
+    } catch (e) { return []; }
+  }
+  function saveGames() {
+    try {
+      var up = state.games.filter(function (g) { return !g.builtin; });
+      localStorage.setItem(KEY, JSON.stringify(up));
+    } catch (e) { /* storage unavailable: previews last for this visit only */ }
+  }
+  function addGame(g) {
+    var i = -1;
+    state.games.forEach(function (x, k) { if (x.pk === g.pk) i = k; });
+    if (i >= 0 && state.games[i].builtin) return 'exists';
+    if (i >= 0) state.games[i] = g; else state.games.unshift(g);
+    delete cache[g.pk];
+    return 'added';
+  }
+
+  /* ---------- picker ---------- */
+  function gameLabel(g) {
+    var s = g.away.abbr + ' ' + (g.away.runs == null ? '' : g.away.runs + ' ') + t('at') + ' ' + g.home.abbr + (g.home.runs == null ? '' : ' ' + g.home.runs);
+    if (g.date) s += ' · ' + fmtDate(g.date);
+    if (g.note) s += ' · ' + noteName(g.note);
+    return s;
+  }
+  function renderPicker() {
+    var sel = $('#gameSel');
+    sel.innerHTML = state.games.map(function (g) {
+      return '<option value="' + esc(g.pk) + '"' + (g.pk === state.sel ? ' selected' : '') + '>' + esc(gameLabel(g)) + '</option>';
+    }).join('');
+    $('#removeBtn').hidden = !(cur() && !cur().builtin);
+  }
+
+  /* ---------- scoreboard ---------- */
+  function renderBoard() {
+    var g = cur();
+    var n = Math.max(9, g.innings.length);
+    var head = '<tr><th></th>';
+    for (var i = 1; i <= n; i++) head += '<th scope="col">' + i + '</th>';
+    head += '<th scope="col" class="r">R</th><th scope="col">H</th><th scope="col">E</th></tr>';
+    function row(side) {
+      var tm = g[side], r = '<tr><th scope="row" class="tm"><span class="sw ' + side + '"></span>' + esc(tm.abbr) + '</th>';
+      for (var i = 0; i < n; i++) {
+        var inn = g.innings[i], v = inn ? (side === 'away' ? inn.a : inn.h) : null;
+        r += '<td>' + (v == null ? (inn || i < 9 ? '–' : '') : v) + '</td>';
+      }
+      r += '<td class="tot r">' + (tm.runs == null ? '' : tm.runs) + '</td><td class="tot">' + (tm.hits == null ? '' : tm.hits) + '</td><td class="tot">' + (tm.errors == null ? '' : tm.errors) + '</td></tr>';
+      return r;
+    }
+    var meta = [statusName(g.status), fmtDate(g.date), venueName(g.venue), noteName(g.note)].filter(Boolean).map(function (s) { return '<span>' + esc(s) + '</span>'; }).join('');
+    $('#board').innerHTML = '<div class="meta">' + meta + '</div><div class="scroll"><table class="line"><thead>' + head + '</thead><tbody>' + row('away') + row('home') + '</tbody></table></div>';
+    $('#srcLink').innerHTML = t('footGame', { pk: esc(g.pk), url: 'https://baseballsavant.mlb.com/gamefeed?game_pk=' + encodeURIComponent(g.pk) });
+  }
+
+  /* ---------- luck cards ---------- */
+  function renderLuck() {
+    var g = cur(), A = analyze(g);
+    var a = A.away, h = A.home, text;
+    if (!a.n && !h.n) {
+      text = t('verdictNone');
+    } else if (!a.n || !h.n) {
+      text = t('verdictOne');
+    } else {
+      var diff = a.net - h.net;
+      var lead = diff >= 0 ? 'away' : 'home', trail = lead === 'away' ? 'home' : 'away';
+      var L = lead === 'away' ? a : h, T = lead === 'away' ? h : a;
+      if (Math.abs(diff) < 1) {
+        text = t('verdictEven', { a: esc(teamName(g, 'away')), ah: a.hits, ae: f1(a.expected), h: esc(teamName(g, 'home')), hh: h.hits, he: f1(h.expected) });
+      } else {
+        text = t('verdictEdge', { lead: esc(teamName(g, lead)), d: f1(Math.abs(diff)), lh: L.hits, le: f1(L.expected), trail: esc(teamName(g, trail)), th: T.hits, te: f1(T.expected) });
+      }
+    }
+    $('#verdict').innerHTML = text;
+    function card(side, L) {
+      var tm = g[side], nm = teamName(g, side);
+      if (!L.n) return '<article class="panel card"><div class="who"><span class="sw ' + side + '"></span><h3>' + esc(nm) + '</h3></div><p class="muted">' + t('noBip') + '</p></article>';
+      return '<article class="panel card" aria-label="' + esc(t('cardAria', { team: nm })) + '">' +
+        '<div class="who"><span class="sw ' + side + '"></span><h3>' + esc(nm) + ' (' + esc(tm.abbr) + ')</h3></div>' +
+        '<div class="big"><div class="num tn">' + pctShow(L.pct) + '<small>%</small></div><div class="band">' + t(bandKey(L.pct)) + '</div></div>' +
+        '<div><div class="meter" role="img" aria-label="' + esc(t('meterAria', { p: pctShow(L.pct) })) + '"><div class="track"></div><div class="mid"></div><div class="dot ' + side + '" style="left:' + L.pct.toFixed(1) + '%"></div></div>' +
+        '<div class="scale"><span>' + t('endUnlucky') + '</span><span>' + t('endEarned') + '</span><span>' + t('endLucky') + '</span></div></div>' +
+        '<dl class="stats"><div><dt>' + t('hits') + '</dt><dd class="tn">' + L.hits + '</dd></div><div><dt>' + t('expected') + '</dt><dd class="tn">' + f1(L.expected) + '</dd></div>' +
+        '<div><dt>' + t('net') + '</dt><dd class="tn">' + signed(L.net, 1) + '</dd></div><div><dt>' + t('hardHit') + '</dt><dd class="tn">' + L.hardHit + '/' + L.total + '</dd></div></dl>' +
+        '<div><p class="chartcap">' + t('pmfCap', { n: L.n }) + '</p><div class="pmf" data-side="' + side + '"></div>' +
+        '<div class="key" style="margin-top:6px"><span><i style="background:var(--' + side + '-tint)"></i>' + t('kFewer') + '</span><span><i style="background:var(--' + side + ')"></i>' + t('kActual') + '</span><span><i style="background:var(--grid)"></i>' + t('kMore') + '</span><span><i class="dash"></i>' + t('kExpected') + '</span></div></div>' +
+        '</article>';
+    }
+    $('#cards').innerHTML = card('away', a) + card('home', h);
+    drawPmfs();
+  }
+
+  function drawPmfs() {
+    if (!ready()) return;
+    var g = cur(), A = analyze(g);
+    var els = document.querySelectorAll('.pmf');
+    for (var i = 0; i < els.length; i++) {
+      var el = els[i], side = el.getAttribute('data-side'), L = A[side];
+      if (!L.n) continue;
+      var W = Math.max(240, el.clientWidth), H = 150, m = { l: 36, r: 6, t: 8, b: 26 };
+      var K = Math.min(L.n, Math.max(L.hits + 2, Math.ceil(L.expected + 3 * L.sd) + 1));
+      var slot = (W - m.l - m.r) / (K + 1);
+      var pmax = 0;
+      for (var k = 0; k <= K; k++) pmax = Math.max(pmax, L.dist[k] || 0);
+      var top = Math.max(0.1, Math.ceil(pmax * 20) / 20);
+      var step = top > 0.3 ? 0.2 : top > 0.15 ? 0.1 : 0.05;
+      var sy = function (v) { return H - m.b - v / top * (H - m.t - m.b); };
+      var s = '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(t('pmfAria', { team: teamName(g, side), a: L.hits, e: f1(L.expected) })) + '">';
+      for (var v = 0; v <= top + 1e-9; v += step) {
+        s += '<line class="gridline" x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + sy(v).toFixed(1) + '" y2="' + sy(v).toFixed(1) + '"></line>';
+        s += '<text class="tick" x="' + (m.l - 6) + '" y="' + (sy(v) + 4).toFixed(1) + '" text-anchor="end">' + Math.round(v * 100) + '%</text>';
+      }
+      for (k = 0; k <= K; k++) {
+        var p = L.dist[k] || 0, cls = k < L.hits ? side + ' tint' : k === L.hits ? side + ' solid' : 'rest';
+        var bh = Math.max(p > 0 ? 1 : 0, H - m.b - sy(p));
+        s += '<rect class="bar ' + cls + '" x="' + (m.l + k * slot + 1).toFixed(1) + '" y="' + (H - m.b - bh).toFixed(1) + '" width="' + Math.max(2, slot - 2).toFixed(1) + '" height="' + bh.toFixed(1) + '" rx="2"><title>' + esc(t('pmfBar', { k: k, p: (p * 100).toFixed(1) })) + '</title></rect>';
+      }
+      s += '<line class="axisline" x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + (H - m.b) + '" y2="' + (H - m.b) + '"></line>';
+      var every = Math.max(1, Math.ceil(24 / slot));
+      for (k = 0; k <= K; k += every) {
+        s += '<text class="tick" x="' + (m.l + (k + 0.5) * slot).toFixed(1) + '" y="' + (H - m.b + 15) + '" text-anchor="middle">' + k + '</text>';
+      }
+      var ex = m.l + (L.expected + 0.5) * slot;
+      s += '<line class="expline" x1="' + ex.toFixed(1) + '" x2="' + ex.toFixed(1) + '" y1="' + (m.t - 2) + '" y2="' + (H - m.b) + '"></line>';
+      s += '</svg>';
+      el.innerHTML = s;
+    }
+  }
+
+  /* ---------- biggest breaks ---------- */
+  function contactLine(b) {
+    var base = innLabel(b.half, b.inn) + ' · ' + eventName(b.event) + ' · ';
+    return zh() ? base + speedText(b.ev) + ' · 仰角 ' + deg(b.la) : base + speedText(b.ev) + ' at ' + deg(b.la);
+  }
+  function renderBreaks() {
+    var g = cur();
+    var c = g.bip.filter(countable);
+    var lucky = c.filter(function (b) { return b.hit && b.xba < 0.5; }).sort(function (a, b) { return a.xba - b.xba; }).slice(0, 3);
+    var unl = c.filter(function (b) { return !b.hit && b.xba >= 0.5; }).sort(function (a, b) { return b.xba - a.xba; }).slice(0, 3);
+    function list(title, sub, rows) {
+      var li = rows.map(function (b) {
+        return '<li><div><div class="nm"><span class="tm-dot ' + b.side + '"></span>' + esc(b.batter) + '</div><div class="sub">' + esc(contactLine(b)) + '</div></div>' +
+          '<div class="pr tn">' + Math.round(b.xba * 100) + '%<small>' + t('hitChance') + '</small></div></li>';
+      }).join('');
+      return '<article class="panel"><h3>' + title + '</h3><p class="chartcap">' + sub + '</p><ul>' + (li || '<li class="muted">' + t('none') + '</li>') + '</ul></article>';
+    }
+    $('#breaks').innerHTML =
+      list(t('luckiestTitle'), t('luckiestSub'), lucky) +
+      list(t('hardestTitle'), t('hardestSub'), unl);
+  }
+
+  /* ---------- scatter ---------- */
+  var scat = { pts: [], sx: null, sy: null, W: 0, H: 0 };
+  function renderKey() {
+    var g = cur();
+    function e(side, kind) {
+      return '<span><i class="' + (kind === 'hit' ? 'disc' : 'ring') + '" style="' + (kind === 'hit' ? 'background' : 'border-color') + ':var(--' + side + ')"></i>' + esc(t(kind === 'hit' ? 'keyHit' : 'keyOut', { team: g[side].abbr })) + '</span>';
+    }
+    $('#scatterKey').innerHTML = e('away', 'hit') + e('away', 'out') + e('home', 'hit') + e('home', 'out');
+  }
+  function drawScatter() {
+    if (!ready()) return;
+    var g = cur(), box = $('#scatterSvg');
+    var pts = g.bip.filter(function (b) { return b.la != null; });
+    var W = Math.max(280, box.clientWidth || 320), H = W < 520 ? 330 : 390;
+    var m = { l: 48, r: 12, t: 12, b: 44 };
+    if (!pts.length) { box.innerHTML = '<p class="empty">' + t('noPlot') + '</p>'; return; }
+    var minEV = Math.min.apply(null, pts.map(function (b) { return b.ev; })), maxEV = Math.max.apply(null, pts.map(function (b) { return b.ev; }));
+    var minLA = Math.min.apply(null, pts.map(function (b) { return b.la; })), maxLA = Math.max.apply(null, pts.map(function (b) { return b.la; }));
+    var y0 = Math.min(40, Math.floor((minEV - 4) / 20) * 20), y1 = Math.max(110, Math.ceil((maxEV + 3) / 10) * 10);
+    var x0 = Math.min(-50, Math.floor((minLA - 5) / 10) * 10), x1 = Math.max(90, Math.ceil((maxLA + 5) / 10) * 10);
+    var sx = function (v) { return m.l + (v - x0) / (x1 - x0) * (W - m.l - m.r); };
+    var sy = function (v) { return H - m.b - (v - y0) / (y1 - y0) * (H - m.t - m.b); };
+    var s = '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(t('scatterAria', { n: pts.length })) + '">';
+    s += '<rect x="' + sx(8).toFixed(1) + '" y="' + m.t + '" width="' + (sx(32) - sx(8)).toFixed(1) + '" height="' + (H - m.t - m.b) + '" fill="var(--band)"></rect>';
+    for (var v = Math.ceil(y0 / 20) * 20; v <= y1; v += 20) {
+      s += '<line class="gridline" x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + sy(v).toFixed(1) + '" y2="' + sy(v).toFixed(1) + '"></line><text class="tick" x="' + (m.l - 7) + '" y="' + (sy(v) + 4).toFixed(1) + '" text-anchor="end">' + v + '</text>';
+    }
+    for (v = Math.ceil(x0 / 20) * 20; v <= x1; v += 20) {
+      s += '<line class="gridline" x1="' + sx(v).toFixed(1) + '" x2="' + sx(v).toFixed(1) + '" y1="' + m.t + '" y2="' + (H - m.b) + '"></line><text class="tick" x="' + sx(v).toFixed(1) + '" y="' + (H - m.b + 16) + '" text-anchor="middle">' + (v < 0 ? MINUS + Math.abs(v) : v) + '°</text>';
+    }
+    s += '<line class="axisline" x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + (H - m.b) + '" y2="' + (H - m.b) + '"></line>';
+    s += '<line x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + sy(95).toFixed(1) + '" y2="' + sy(95).toFixed(1) + '" stroke="var(--ink2)" stroke-width="1.5" stroke-dasharray="5 4"></line>';
+    s += '<text class="lbl" x="' + (W - m.r - 4) + '" y="' + (sy(95) - 5).toFixed(1) + '" text-anchor="end">' + esc(t('hardLine')) + '</text>';
+    s += '<text class="lbl" x="' + (sx(8) + 5).toFixed(1) + '" y="' + (H - m.b - 6) + '">' + esc(t('sweetSpot')) + '</text>';
+    s += '<text class="axt" x="' + ((m.l + W - m.r) / 2).toFixed(1) + '" y="' + (H - 6) + '" text-anchor="middle">' + esc(t('axLaunch')) + '</text>';
+    s += '<text class="axt" transform="translate(13 ' + ((m.t + H - m.b) / 2).toFixed(1) + ') rotate(-90)" text-anchor="middle">' + esc(t('axEV')) + '</text>';
+    var order = pts.slice().sort(function (a, b) { return (a.hit ? 1 : 0) - (b.hit ? 1 : 0); });
+    order.forEach(function (b) {
+      s += '<circle class="pt ' + b.side + ' ' + (b.hit ? 'hit' : 'out') + '" cx="' + sx(b.la).toFixed(1) + '" cy="' + sy(b.ev).toFixed(1) + '" r="' + (b.hit ? 6.5 : 5.5) + '"></circle>';
+    });
+    s += '<circle id="hl" class="hl" r="11" cx="-50" cy="-50"></circle>';
+    s += '</svg>';
+    box.innerHTML = s;
+    scat = { pts: pts, sx: sx, sy: sy, W: W, H: H };
+  }
+  function tipFor(b) {
+    var detail = zh()
+      ? speedText(b.ev) + ' · 仰角 ' + deg(b.la) + (b.dist != null ? ' · ' + distText(b.dist) : '')
+      : speedText(b.ev) + ' · ' + deg(b.la) + (b.dist != null ? ' · ' + distText(b.dist) : '');
+    return '<b>' + esc(b.batter) + '</b> (' + esc(b.team) + ')<br>' + esc(innLabel(b.half, b.inn) + ' · ' + eventName(b.event)) + '<br>' + esc(detail) + '<br>' + esc(t('tipChance', { p: b.xba == null ? '—' : Math.round(b.xba * 100) + '%' }));
+  }
+  function onScatterMove(e) {
+    var box = $('#scatterSvg'), svg = box.querySelector('svg');
+    if (!svg || !scat.pts.length) return;
+    var r = svg.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+    var best = null, bd = 26 * 26;
+    scat.pts.forEach(function (b) {
+      var dx = scat.sx(b.la) - x, dy = scat.sy(b.ev) - y, d = dx * dx + dy * dy;
+      if (d < bd) { bd = d; best = b; }
+    });
+    var tip = $('#tip'), hl = $('#hl');
+    if (!best) { tip.hidden = true; if (hl) { hl.setAttribute('cx', -50); hl.setAttribute('cy', -50); } return; }
+    var cx = scat.sx(best.la), cy = scat.sy(best.ev);
+    hl.setAttribute('cx', cx); hl.setAttribute('cy', cy);
+    tip.innerHTML = tipFor(best);
+    tip.hidden = false;
+    var tw = tip.offsetWidth, th = tip.offsetHeight;
+    var left = cx + 16; if (left + tw > scat.W - 4) left = cx - tw - 16; if (left < 4) left = 4;
+    var topPx = cy - th / 2; if (topPx < 4) topPx = 4; if (topPx + th > scat.H - 4) topPx = scat.H - th - 4;
+    tip.style.left = left + 'px'; tip.style.top = (topPx + (svg.getBoundingClientRect().top - box.getBoundingClientRect().top)) + 'px';
+  }
+  function onScatterLeave() {
+    $('#tip').hidden = true;
+    var hl = $('#hl'); if (hl) { hl.setAttribute('cx', -50); hl.setAttribute('cy', -50); }
+  }
+
+  /* ---------- table ---------- */
+  var COLS = [
+    { k: 'order', t: 'thInning', cls: '' },
+    { k: 'batter', t: 'thBatter', cls: '' },
+    { k: 'event', t: 'thResult', cls: '' },
+    { k: 'ev', t: 'thEV', cls: 'r' },
+    { k: 'la', t: 'thLA', cls: 'r' },
+    { k: 'dist', t: 'thDist', cls: 'r' },
+    { k: 'xba', t: 'thProb', cls: 'r' },
+    { k: 'luck', t: 'thLuck', cls: 'r' }
+  ];
+  function luckOf(b) { return countable(b) ? (b.hit ? 1 : 0) - b.xba : null; }
+  function renderTeamSeg() {
+    var g = cur();
+    var items = [['all', t('bothTeams')], ['away', g.away.abbr], ['home', g.home.abbr]];
+    $('#teamSeg').innerHTML = items.map(function (it) {
+      return '<button type="button" data-team="' + it[0] + '" aria-pressed="' + (state.team === it[0]) + '">' + esc(it[1]) + '</button>';
+    }).join('');
+  }
+  function renderTable() {
+    var g = cur();
+    var rows = g.bip.map(function (b, i) { return { b: b, i: i }; }).filter(function (r) {
+      return (state.scope === 'all' || r.b.hit) && (state.team === 'all' || r.b.side === state.team);
+    });
+    var key = state.sortKey, dir = state.sortDir;
+    rows.sort(function (p, q) {
+      var a, b2;
+      if (key === 'order') { a = p.i; b2 = q.i; }
+      else if (key === 'luck') { a = luckOf(p.b); b2 = luckOf(q.b); }
+      else { a = p.b[key]; b2 = q.b[key]; }
+      if (a == null && b2 == null) return p.i - q.i;
+      if (a == null) return 1;
+      if (b2 == null) return -1;
+      if (typeof a === 'string') {
+        if (key === 'event') { a = eventName(a); b2 = eventName(b2); }
+        var c = a.localeCompare(b2);
+        return c ? c * dir : p.i - q.i;
+      }
+      return a === b2 ? p.i - q.i : (a - b2) * dir;
+    });
+    var head = '<thead><tr>' + COLS.map(function (c) {
+      var on = c.k === key, arrow = on ? (dir > 0 ? ' ▲' : ' ▼') : '';
+      return '<th class="' + c.cls + '" scope="col" aria-sort="' + (on ? (dir > 0 ? 'ascending' : 'descending') : 'none') + '"><button type="button" data-sort="' + c.k + '">' + t(c.t) + arrow + '</button></th>';
+    }).join('') + '</tr></thead>';
+    var body = rows.map(function (r) {
+      var b = r.b, lk = luckOf(b), word = '';
+      if (lk !== null && Math.abs(lk) >= 0.5) word = t(b.hit ? 'wLucky' : 'wUnlucky');
+      var evCell = f1(b.ev) + (b.ev >= 95 ? '<span class="hh">95+</span>' : '');
+      return '<tr><td class="inn">' + innShort(b.half, b.inn) + '</td>' +
+        '<td title="' + esc(b.des) + '"><span class="tm-dot ' + b.side + '"></span>' + esc(b.batter) + ' <span class="muted">' + esc(b.team) + '</span></td>' +
+        '<td>' + esc(eventName(b.event)) + (b.barrel ? '<span class="badge">' + t('barrel') + '</span>' : '') + '</td>' +
+        '<td class="r ev">' + evCell + '</td><td class="r">' + deg(b.la) + '</td><td class="r">' + (b.dist == null ? '—' : distText(b.dist)) + '</td>' +
+        '<td class="r">' + (b.xba == null ? '—' : '<span class="prob"><span class="pb"><i class="' + b.side + '" style="width:' + (b.xba * 100).toFixed(0) + '%"></i></span><span class="v">' + Math.round(b.xba * 100) + '%</span></span>') + '</td>' +
+        '<td class="lk">' + (lk === null ? '<span class="muted">' + t('na') + '</span>' : signed(lk, 2) + (word ? '<span class="w">' + word + '</span>' : '')) + '</td></tr>';
+    }).join('');
+    $('#tbl').innerHTML = head + '<tbody>' + (body || '<tr><td colspan="8" class="empty">' + t('noRows') + '</td></tr>') + '</tbody>';
+  }
+
+  /* ---------- wiring ---------- */
+  function renderAll() {
+    renderPicker(); renderBoard(); renderLuck(); renderBreaks(); renderKey(); drawScatter(); renderTeamSeg(); renderTable();
+  }
+  function parseLoose(str) {
+    try { return JSON.parse(str); } catch (e) {
+      var a = str.indexOf('{'), b = str.lastIndexOf('}');
+      if (a >= 0 && b > a) return JSON.parse(str.slice(a, b + 1));
+      throw e;
+    }
+  }
+  function readFile(f) {
+    return new Promise(function (res, rej) {
+      var fr = new FileReader();
+      fr.onload = function () { res(String(fr.result)); };
+      fr.onerror = function () { rej(fr.error); };
+      fr.readAsText(f);
+    });
+  }
+  $('#gameFile').addEventListener('change', function (e) {
+    var files = [].slice.call(e.target.files || []);
+    if (!files.length) return;
+    var input = e.target, added = [], dup = [], bad = [];
+    files.reduce(function (p, f) {
+      return p.then(function () { return readFile(f); }).then(function (txt) {
+        var g = parseSavant(parseLoose(txt));
+        if (!g.bip.length) throw new Error('empty');
+        if (addGame(g) === 'exists') dup.push(g.pk); else added.push(g);
+      }).catch(function () { bad.push(f.name); });
+    }, Promise.resolve()).then(function () {
+      input.value = '';
+      var target = added.length ? added[added.length - 1].pk : (dup.length ? dup[dup.length - 1] : null);
+      if (added.length) saveGames();
+      var parts = [];
+      if (added.length) parts.push(['pvAdded', { n: added.length, games: added.length === 1 ? t('pvGameOne') : t('pvGameMany') }]);
+      if (dup.length) parts.push(['pvDup', { pks: dup.join(', ') }]);
+      if (bad.length) parts.push(['pvBad', { files: bad.join(', ') }]);
+      say(parts);
+      if (target) selectGame(target); else renderPicker();
+    });
+  });
+  $('#gameSel').addEventListener('change', function (e) { say(null); selectGame(e.target.value); });
+  $('#removeBtn').addEventListener('click', function () {
+    var g = cur(); if (!g || g.builtin) return;
+    state.games = state.games.filter(function (x) { return x.pk !== g.pk; });
+    saveGames(); say([['removed']]);
+    if (state.games.length) selectGame(state.games[0].pk); else showEmpty();
+  });
+  $('#langBtn').addEventListener('click', function () { setLang(zh() ? 'en' : 'zh'); });
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest ? e.target.closest('button') : null;
+    if (!btn) return;
+    if (btn.hasAttribute('data-scope')) {
+      state.scope = btn.getAttribute('data-scope');
+      [].forEach.call(document.querySelectorAll('[data-scope]'), function (x) { x.setAttribute('aria-pressed', x === btn ? 'true' : 'false'); });
+      renderTable();
+    } else if (btn.hasAttribute('data-team')) {
+      state.team = btn.getAttribute('data-team'); renderTeamSeg(); renderTable();
+    } else if (btn.hasAttribute('data-sort')) {
+      var k = btn.getAttribute('data-sort');
+      if (state.sortKey === k) state.sortDir = -state.sortDir;
+      else { state.sortKey = k; state.sortDir = (k === 'order' || k === 'batter' || k === 'event') ? 1 : -1; }
+      renderTable();
+    }
+  });
+  var sv = $('#scatterSvg');
+  sv.addEventListener('pointermove', onScatterMove);
+  sv.addEventListener('pointerdown', onScatterMove);
+  sv.addEventListener('pointerleave', onScatterLeave);
+
+  var lastW = 0, raf = 0;
+  function onResize() {
+    var w = Math.round($('.wrap').clientWidth);
+    if (w === lastW) return;
+    lastW = w;
+    if (!ready()) return;
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(function () { drawScatter(); drawPmfs(); });
+  }
+  if (window.ResizeObserver) new ResizeObserver(onResize).observe($('.wrap'));
+  else window.addEventListener('resize', onResize);
+
+  /* ---------- loading games from the site ---------- */
+  function setSections(show) {
+    ['luckSec', 'breaks', 'scatterPanel', 'tablePanel'].forEach(function (id) { $('#' + id).hidden = !show; });
+  }
+  function showEmpty() {
+    setSections(false);
+    renderPicker();
+    $('#board').innerHTML = '<p class="empty">' + t('empty') + '</p>';
+  }
+  function findGame(pk) {
+    for (var i = 0; i < state.games.length; i++) if (state.games[i].pk === pk) return i;
+    return -1;
+  }
+  function ensure(pk) {
+    var i = findGame(pk);
+    if (i < 0) return Promise.reject(new Error('missing'));
+    var g = state.games[i];
+    if (g.bip) return Promise.resolve(g);
+    return fetch('games/' + encodeURIComponent(pk) + '.json').then(function (r) {
+      if (!r.ok) throw new Error('http');
+      return r.json();
+    }).then(function (full) {
+      full.builtin = true;
+      full.note = g.note || '';
+      state.games[findGame(pk)] = full;
+      return full;
+    });
+  }
+  function selectGame(pk) {
+    state.sel = pk; state.team = 'all';
+    renderPicker();
+    if (!(cur() && cur().bip)) { setSections(false); $('#board').innerHTML = '<p class="empty">' + t('loading') + '</p>'; }
+    ensure(pk).then(function () { setSections(true); renderAll(); }).catch(function () {
+      say([['loadErr']]);
+    });
+  }
+  function boot() {
+    applyStatic();
+    var saved = loadSaved();
+    fetch('games/manifest.json', { cache: 'no-cache' }).then(function (r) {
+      if (!r.ok) throw new Error('http');
+      return r.json();
+    }).then(function (list) {
+      (Array.isArray(list) ? list : []).forEach(function (e) { e.builtin = true; state.games.push(e); });
+    }).catch(function () {
+      say([['manifestErr']]);
+    }).then(function () {
+      saved.forEach(function (g) { if (findGame(g.pk) < 0) state.games.push(g); });
+      if (!state.games.length) { showEmpty(); return; }
+      selectGame(state.games[0].pk);
+    });
+  }
+  boot();
+  lastW = Math.round($('.wrap').clientWidth);
+})();
+</script>
+</body>
+</html>
